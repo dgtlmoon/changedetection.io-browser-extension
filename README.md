@@ -43,7 +43,7 @@ click <strong>"Watch this website"</strong> to add the current webpage to your l
 
 **Step One** - Install via ~~WebShop~~ ( We are waiting for the developer store to authorise our account ) or Local install
 
-**Step Two** - Simply access your changedetection.io account/installation, then visit the <strong>"Settings"</strong> page and click on the <strong>"API &amp; Plugins"</strong> tab and I will automatically configure myself.
+**Step Two** - Simply access your changedetection.io account/installation, then visit the <strong>"Settings"</strong> page and click on the <strong>"API &amp; Plugins"</strong> tab and it will automatically configure itself.
 
 
 ## From WebStore
