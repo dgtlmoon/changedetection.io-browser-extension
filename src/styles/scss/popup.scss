@@ -1,0 +1,122 @@
+@import "parts/_variables";
+
+body {
+  color: var(--color-text);
+  background: var(--color-background-page);
+  font-family: Helvetica Neue, Helvetica, Lucida Grande, Arial, Ubuntu, Cantarell, Fira Sans, sans-serif;
+
+  margin: 8px;
+  min-width: 400px;
+  font-size: 0.9rem;
+}
+
+#logo {
+  max-width: 200px;
+}
+
+header {
+  background: #1a73e8;
+  color: #fff;
+  padding: 0.8rem;
+  border-radius: 5px;
+  margin-bottom: 1rem;
+}
+
+h1 > span#location {
+  color: blue;
+}
+#tag {
+  border-radius: 10px;
+  border: 1px solid var(--color-grey-600);
+  color: var(--color-grey-600);;
+  padding-left: 1rem;
+}
+#results {
+  text-align: center;
+}
+main {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.action-btn-container {
+  display: grid;
+  grid-template-rows: 1fr;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  height: 2.5rem;
+  gap: 0.2em;
+  border: none;
+  border-radius: 10px;
+}
+
+.action-btn:hover {
+  filter: brightness(1.15);
+  cursor: pointer;
+}
+
+.action-btn:active {
+  filter: brightness(1.15);
+}
+
+.action-btn.large {
+  grid-column: 1 / 4;
+}
+
+.action-btn.watch {
+  background-color: #485FC7;
+  color: white;
+}
+
+.action-btn.clear-settings {
+  background-color: #c74848;
+  color: white;
+}
+
+.action-btn.watch-with-cookies {
+  background-color: #488ec7;
+  color: white;
+}
+
+
+.error {
+  color: var(--color-dark-red);
+
+}
+#extra-links {
+  text-align: right;
+  a, a:visited {
+    text-decoration: none;
+    color: var(--color-grey-325);
+  }
+}
+
+
+
+
+.display-when-unsynced, .display-when-synced {
+  display: none;
+}
+
+.state-unsynced {
+  .display-when-unsynced {
+    display: block !important;
+  }
+}
+
+.state-synced {
+  .display-when-synced {
+    display: block !important;
+  }
+}
+
+
