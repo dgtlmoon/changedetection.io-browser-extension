@@ -1,4 +1,5 @@
-# Web monitor browser extension for changedetection.io 
+<h1 align="center"> Web monitor browser extension for changedetection.io </h1>
+
 <p align="center">
 Easily add-to and manage your list of monitored websites directly in your browser.
 </p>
