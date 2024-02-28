@@ -3,6 +3,12 @@
   "description": "Helps you to easily add websites to your changedetection.io profile.",
   "version": "0.1",
   "manifest_version": 3,
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "changedetectionio.opensource@gmail.com",
+      "strict_min_version": "42.0"
+    }
+  },
   "permissions": [
     "activeTab",
     "cookies",
@@ -25,10 +31,7 @@
     "48": "/images/shortcut.png",
     "128": "/images/shortcut.png"
   },
-  "incognito": "split",
-  "background": {
-    "service_worker": "background.js"
-  },
+  "incognito": "spanning",
   "content_scripts": [
     {
       "matches": [
