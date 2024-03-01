@@ -5,10 +5,11 @@
   "manifest_version": 3,
   "permissions": [
     "activeTab",
-    "cookies",
+    "background",
     "notifications",
     "storage",
-    "background"
+    "tabs",
+    "scripting"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -28,15 +29,5 @@
   "incognito": "split",
   "background": {
     "service_worker": "background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "api-key-sync.js"
-      ]
-    }
-  ]
+  }
 }

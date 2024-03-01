@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles/popup.css">
     <link rel="stylesheet" href="iconfont/material-icons.css">
     <script src="general.js"></script>
     <script src="popup.js" defer></script>
+    <script src="api-key-sync.js" defer></script>
 </head>
 
 <body>
@@ -13,8 +15,7 @@
     <img id=logo src="./images/logo.svg" alt="Logo" title="Logo">
 </header>
 <section class="display-when-synced" style="display: none;">
-    <div>Add this website to your changedetection.io monitor.<br><!-- Use <strong>cookies</strong> if you want to keep the
-        same session.-->
+    <div>Add this website to your changedetection.io monitor.<br>
     </div>
     <div>
         <ul id="processor">
@@ -43,16 +44,25 @@
     </div>
 </section>
 <section>
-    <div id="results"><span class="label-text">After adding the site, you can use the Visual Selector and other Filters inside of your changedetection.io tool.</span></div>
+    <div id="results"><span class="label-text  display-when-synced">After adding the site, you can use the Visual Selector and other Filters inside of your changedetection.io tool.</span></div>
 </section>
 <section>
     <!-- helper message in the case that we're not configured yet -->
-    <div id="status-unset" class="error display-when-unsynced" style="display: none;">
-              <span class="material-symbols-outlined">
-        announcement
-        </span>
+    <div id="status-unset" class="display-when-unsynced" style="display: none;">
         <div>
-            Not yet configured, simply access your changedetection.io account/installation, then visit the <strong>"Settings"</strong> page and click on the <strong>"API &amp; Plugins"</strong> tab and I will automatically configure myself.
+            <p>Not yet configured, Simply access your changedetection.io tool webpage, Visit the
+                <i><strong>"Settings"</strong></i>
+                page then goto the <i><strong>"API &amp; Plugins"</strong></i> tab.</p>
+
+            Once there, click <i><strong>Sync API Access</strong></i> below and I will automatically configure
+            myself.<br>
+            <p>
+                <button id="sync-access" class="action-btn watch" title="Click to sync!">
+            <span class="material-symbols-outlined">
+        sync_lock
+        </span> Sync API Access
+                </button>
+            </p>
         </div>
     </div>
 

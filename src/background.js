@@ -14,4 +14,31 @@ chrome.runtime.onMessage.addListener(
             });
         }
     }
-);
+)
+
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    if (request.command === "getAPIKeyValue") {
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            chrome.scripting.executeScript({
+                target: {tabId: tabs[0].id},
+                function: getElementsContent
+            }).then(([result]) => {
+                sendResponse(result.result);
+            }).catch(error => {
+                console.error("Script execution failed: " + error.message);
+                sendResponse(false);
+            });
+        });
+        return true; // Required to indicate that sendResponse will be called asynchronously
+
+    }
+});
+
+function getElementsContent() {
+    const element = document.getElementById("api-key");
+    if (element) {
+        return element.textContent;
+    } else {
+        return null;
+    }
+}
