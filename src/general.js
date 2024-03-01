@@ -9,3 +9,4 @@ chrome.storage.local.get(['apiKey', 'endpointUrl']).then(({apiKey, endpointUrl})
         }
     }
 });
+
