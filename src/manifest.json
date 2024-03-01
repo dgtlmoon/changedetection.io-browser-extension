@@ -5,9 +5,16 @@
   "manifest_version": 3,
   "permissions": [
     "activeTab",
+    "cookies",
     "notifications",
     "storage",
     "background"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
   ],
   "action": {
     "default_popup": "popup.html",
