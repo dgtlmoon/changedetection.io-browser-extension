@@ -8,7 +8,7 @@ Easily add-to and manage your list of monitored websites directly in your browse
 </picture>
 
 <p align="center">
-  <a href="LICENSE" target="_blank">
+  <a href="LICENSE.md" target="_blank">
     <img alt="Apache License" src="https://img.shields.io/github/license/dgtlmoon/changedetection.io-browser-extension.svg?style=flat-square" />
   </a>
 
