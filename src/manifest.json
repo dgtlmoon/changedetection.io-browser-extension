@@ -13,17 +13,17 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "/images/shortcut.png",
-      "32": "/images/shortcut.png",
-      "48": "/images/shortcut.png",
-      "128": "/images/shortcut.png"
+      "16": "/images/shortcut-16.png",
+      "32": "/images/shortcut-32.png",
+      "48": "/images/shortcut-48.png",
+      "128": "/images/shortcut-128.png"
     }
   },
   "icons": {
-    "16": "/images/shortcut.png",
-    "32": "/images/shortcut.png",
-    "48": "/images/shortcut.png",
-    "128": "/images/shortcut.png"
+    "16": "/images/shortcut-16.png",
+    "32": "/images/shortcut-32.png",
+    "48": "/images/shortcut-48.png",
+    "128": "/images/shortcut-128.png"
   },
   "incognito": "split",
   "background": {
