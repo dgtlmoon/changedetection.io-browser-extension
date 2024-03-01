@@ -5,11 +5,11 @@
   "manifest_version": 3,
   "permissions": [
     "activeTab",
+    
     "cookies",
     "notifications",
     "storage",
-    "background",
-    "contextMenus"
+    "background"
   ],
     "content_scripts": [
     {
