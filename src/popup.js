@@ -1,14 +1,18 @@
-document.getElementById('results').innerHTML = "";
 
-function submitURL(endpointUrl, apiKey, watch_url, tag) {
+function submitURL(endpointUrl, apiKey, watch_url, tag, mode) {
     var manifest = chrome.runtime.getManifest();
 
     const endpoint = endpointUrl + `/api/v1/watch?from_extension_v=${manifest.version}`;
 
     console.log(`Submitting "${watch_url}" watch to "${endpoint}"`)
     data = {'url': watch_url}
+
     if (tag.trim().length > 0) {
         data['tag'] = tag.trim()
+    }
+    // Default is text_json_diff, also covers the case where their API doesn't support adding with "processor"
+    if (mode !== 'text_json_diff') {
+        data['processor'] = mode;
     }
 
     // Fetch data from the API
@@ -74,7 +78,12 @@ document.getElementById('watch').onclick = function () {
                 url = tabs[0].url;
             }
 
-            submitURL(endpointUrl, apiKey, url, document.getElementById('tag').value);
+            submitURL(endpointUrl,
+                apiKey,
+                url,
+                document.getElementById('tag').value,
+                document.querySelector('input[name="processor"]:checked').value
+            );
         });
     });
 
