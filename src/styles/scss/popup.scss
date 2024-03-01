@@ -28,7 +28,7 @@ h1 > span#location {
 #tag {
   border-radius: 10px;
   border: 1px solid var(--color-grey-600);
-  color: var(--color-grey-600);;
+  color: var(--color-grey-350);
   padding-left: 1rem;
 }
 #results {
@@ -101,8 +101,6 @@ main {
 }
 
 
-
-
 .display-when-unsynced, .display-when-synced {
   display: none;
 }
@@ -119,4 +117,28 @@ main {
   }
 }
 
+ul#processor {
+  list-style: none;
+  padding: 0;
+
+    li:nth-child(even) {
+      padding-top: 1rem;
+
+    }
+
+  label {
+    font-weight: bold;
+
+    &:hover {
+      cursor: pointer;
+    }
+  }
+}
+
+.label-text {
+  padding-left: 1.3rem;
+  font-size: 0.8rem;
+  color: var(--color-grey-325);
+  font-weight: lighter;
+}
 

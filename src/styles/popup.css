@@ -146,7 +146,7 @@ h1 > span#location {
 #tag {
   border-radius: 10px;
   border: 1px solid var(--color-grey-600);
-  color: var(--color-grey-600);
+  color: var(--color-grey-350);
   padding-left: 1rem; }
 
 #results {
@@ -213,3 +213,19 @@ main {
 
 .state-synced .display-when-synced {
   display: block !important; }
+
+ul#processor {
+  list-style: none;
+  padding: 0; }
+  ul#processor li:nth-child(even) {
+    padding-top: 1rem; }
+  ul#processor label {
+    font-weight: bold; }
+    ul#processor label:hover {
+      cursor: pointer; }
+
+.label-text {
+  padding-left: 1.3rem;
+  font-size: 0.8rem;
+  color: var(--color-grey-325);
+  font-weight: lighter; }
