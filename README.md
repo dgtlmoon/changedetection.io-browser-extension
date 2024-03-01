@@ -1,4 +1,5 @@
-# Web monitor browser extension for changedetection.io 
+<h1 align="center"> Web monitor browser extension for changedetection.io </h1>
+
 <p align="center">
 Easily add-to and manage your list of monitored websites directly in your browser.
 </p>
@@ -8,7 +9,7 @@ Easily add-to and manage your list of monitored websites directly in your browse
 </picture>
 
 <p align="center">
-  <a href="LICENSE" target="_blank">
+  <a href="LICENSE.md" target="_blank">
     <img alt="Apache License" src="https://img.shields.io/github/license/dgtlmoon/changedetection.io-browser-extension.svg?style=flat-square" />
   </a>
 
@@ -42,7 +43,7 @@ click <strong>"Watch this website"</strong> to add the current webpage to your l
 
 **Step One** - Install via ~~WebShop~~ ( We are waiting for the developer store to authorise our account ) or Local install
 
-**Step Two** - Simply access your changedetection.io account/installation, then visit the <strong>"Settings"</strong> page and click on the <strong>"API &amp; Plugins"</strong> tab and I will automatically configure myself.
+**Step Two** - Simply access your changedetection.io account/installation, then visit the <strong>"Settings"</strong> page and click on the <strong>"API &amp; Plugins"</strong> tab and it will automatically configure itself.
 
 
 ## From WebStore

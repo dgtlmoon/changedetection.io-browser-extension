@@ -16,8 +16,17 @@
     <div>Add this website to your changedetection.io monitor.<br><!-- Use <strong>cookies</strong> if you want to keep the
         same session.-->
     </div>
-    <div class="action-btn-container">
+    <div>
+        <ul id="processor">
+            <li><input checked="" id="processor-0" name="processor" type="radio" value="text_json_diff"> <label
+                    for="processor-0">Webpage Text/HTML, JSON and PDF changes</label>
+            <br> <span class="label-text">Monitors a page for changes in text</span>
+            </li>
+            <li><input id="processor-1" name="processor" type="radio" value="restock_diff"> <label for="processor-1">Re-stock Detection for single product pages <br> <span class="label-text">For pages that contains only ONE product</span></label></li>
+        </ul>
+    </div>
 
+    <div class="action-btn-container">
         <button id="watch" class="action-btn watch" title="Watch this website (adds the URL)">
             Watch this website
             <span class="material-symbols-outlined">
@@ -25,7 +34,7 @@
         </span>
         </button>
         <input id="tag" name="tag" type="text" autocomplete="" placeholder="Organisational tag/group" />
-<!--        <button id="watch-with-cookies" class="action-btn watch-with-cookies" title="Watch this website (also includes any cookies)">
+        <!--        <button id="watch-with-cookies" class="action-btn watch-with-cookies" title="Watch this website (also includes any cookies)">
             Watch including cookies
             <span class="material-symbols-outlined">
         cookie
@@ -34,7 +43,7 @@
     </div>
 </section>
 <section>
-    <div id="results"></div>
+    <div id="results"><span class="label-text">After adding the site, you can use the Visual Selector and other Filters inside of your changedetection.io tool.</span></div>
 </section>
 <section>
     <!-- helper message in the case that we're not configured yet -->
