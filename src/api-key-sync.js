@@ -7,14 +7,14 @@
 // This is a lot easier than copying and pasting text and URLs and hoping that you get it correct :)
 
 
-function attemptAPIAccessSync() {
+function attemptAPIAccessSync(triggerElem) {
 
     chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {        // tabs is an array of tab objects representing the currently open tabs
         if (tabs && tabs.length > 0) {
 
             // Get the URL of the active tab
             const url = tabs[0].url.toLowerCase().trim();
-
+            triggerElem.innerHTML=`Checking for access key <span class="material-symbols-outlined">sync_lock</span>`;
             chrome.runtime.sendMessage({command: "getAPIKeyValue"}, function (response) {
                 if (url.endsWith('/settings#api') && response !== false) {
                     const save_endpointUrl = url.replace('/settings#api', '');
@@ -46,6 +46,8 @@ function attemptAPIAccessSync() {
 chrome.storage.local.get(['apiKey', 'endpointUrl']).then(({apiKey, endpointUrl}) => {
     if (apiKey === undefined || endpointUrl === undefined) {
         var button = document.getElementById("sync-access");
-        button.addEventListener("click", attemptAPIAccessSync);
+        button.addEventListener("click", function (event) {
+            attemptAPIAccessSync(event.target);
+        });
     }
 })
