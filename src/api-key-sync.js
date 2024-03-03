@@ -1,57 +1,53 @@
 // If we are on something that looks like the CDIO API page, use it as auto-config
 
-// Function to handle anchor changes
-function detectSyncAPIPage() {
-    const hash = window.location.hash;
-    var keyElement = document.getElementById('api-key');
-    const baseUrl = window.location.href.trim();
-    // background handler will figure out the baseUrl
-    if (location.href.endsWith('/settings#api') && keyElement) {
-        chrome.storage.local.get(['apiKey', 'endpointUrl']).then(({apiKey, endpointUrl}) => {
-            if (apiKey === undefined || endpointUrl === undefined) {
-                const save_endpointUrl = location.href.toLowerCase().trim().replace('/settings#api', '');
-                chrome.storage.local.set({
-                    apiKey: keyElement.textContent.trim(),
-                    endpointUrl: save_endpointUrl
-                }, function () {
-                    chrome.runtime.sendMessage({
-                        type: 'showNotification',
-                        data: {
-                            type: 'basic',
-                            iconUrl: '/images/shortcut.png',
-                            title: 'Success',
-                            message: 'Now synchronised with your changedetection.io, happy change detecting!'
-                        }
+// The API config page always ends in "/settings/#api", when this page is detected we can auto-configure ourself by using
+// the API key and current URL.
+
+// So you just only need to visit your API settings page and then this extension will know where to send its own data to.
+// This is a lot easier than copying and pasting text and URLs and hoping that you get it correct :)
+
+
+function attemptAPIAccessSync(triggerElem) {
+
+    chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {        // tabs is an array of tab objects representing the currently open tabs
+        if (tabs && tabs.length > 0) {
+
+            // Get the URL of the active tab
+            const url = tabs[0].url.toLowerCase().trim();
+            triggerElem.innerHTML=`Checking for access key <span class="material-symbols-outlined">sync_lock</span>`;
+            chrome.runtime.sendMessage({command: "getAPIKeyValue"}, function (response) {
+                if (url.endsWith('/settings#api') && response !== false) {
+                    const save_endpointUrl = url.replace('/settings#api', '');
+                    chrome.storage.local.set({
+                        apiKey: response.trim(),
+                        endpointUrl: save_endpointUrl
+                    }, function () {
+                        document.body.classList.add('state-synced')
+                        document.body.classList.remove('state-unsynced')
+                        chrome.runtime.sendMessage({
+                            type: 'showNotification',
+                            data: {
+                                type: 'basic',
+                                iconUrl: '/images/shortcut-128.png',
+                                title: 'Success',
+                                message: 'Now synchronised with your changedetection.io, happy change detecting!'
+                            }
+                        });
                     });
-                });
-
-            }
-        });
-    }
-    console.log(`Found API information, request syncing to ${baseUrl}.`)
-    document.body.classList.add('state-synced')
-    document.body.classList.remove('state-unsynced')
-
-}
-
-if (location.href.toLowerCase().trim().includes('/settings')) {
-    chrome.storage.local.get(['apiKey', 'endpointUrl']).then(({apiKey, endpointUrl}) => {
-
-        // Only attempt to sync if we dont have any access defined
-        if (apiKey === undefined) {
-            console.log('Scanninng for API key..')
-            var originalHashChangeFunction = window.onhashchange;
-
-            function myHashChangeFunction() {
-                // Invoke the original function if it exists (so we dont break existing sites)
-                if (typeof originalHashChangeFunction === 'function') {
-                    originalHashChangeFunction();
+                } else {
+                    alert("Cant find your API information, are you on the API Tab in the Settings Page of your changedetection.io tool?")
                 }
-                detectSyncAPIPage();
-            }
+            });
 
-            window.onhashchange = myHashChangeFunction;
-            detectSyncAPIPage()
         }
     });
 }
+
+chrome.storage.local.get(['apiKey', 'endpointUrl']).then(({apiKey, endpointUrl}) => {
+    if (apiKey === undefined || endpointUrl === undefined) {
+        var button = document.getElementById("sync-access");
+        button.addEventListener("click", function (event) {
+            attemptAPIAccessSync(event.target);
+        });
+    }
+})
