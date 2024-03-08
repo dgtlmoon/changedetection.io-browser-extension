@@ -1,7 +1,7 @@
 {
   "name": "Changedetection.io Website Monitor",
   "description": "Helps you to easily add websites to your changedetection.io profile.",
-  "version": "0.2",
+  "version": "0.2.1",
   "manifest_version": 3,
   "permissions": [
     "activeTab",
