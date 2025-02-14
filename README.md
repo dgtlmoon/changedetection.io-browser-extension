@@ -41,8 +41,8 @@ click <strong>"Watch this website"</strong> to add the current webpage to your l
 
 # Installation
 
-**Step 1:** Install via [Chrome Web Store](https://chromewebstore.google.com/detail/changedetectionio-website/kefcfmgmlhmankjmnbijimhofdjekbop) or Manual Install (see below)
-**Step 2:** Simply access your changedetection.io account/installation, then visit the <strong>"Settings"</strong> page and click on the <strong>"API &amp; Plugins"</strong> tab and it will automatically configure itself.
+- **Step 1:** Install via [Chrome Web Store](https://chromewebstore.google.com/detail/changedetectionio-website/kefcfmgmlhmankjmnbijimhofdjekbop) or Manual Install (see below)
+- **Step 2:** Simply access your changedetection.io account/installation, then visit the <strong>"Settings"</strong> page and click on the <strong>"API &amp; Plugins"</strong> tab and it will automatically configure itself.
 
 
 ## Manual Install from source code (Google Chrome)
