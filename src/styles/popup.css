@@ -149,6 +149,25 @@ h1 > span#location {
   color: var(--color-grey-350);
   padding-left: 1rem; }
 
+.tags-list {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid var(--color-grey-600);
+  border-radius: 5px;
+  margin-top: 5px;
+  background-color: var(--color-background);
+}
+
+.tag-item {
+  padding: 5px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-grey-800);
+}
+
+.tag-item:hover {
+  background-color: var(--color-grey-800);
+}
+
 #results {
   text-align: center; }
 
