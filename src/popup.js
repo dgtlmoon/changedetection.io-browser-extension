@@ -159,20 +159,36 @@ function submitURL(endpointUrl, apiKey, watch_url, tag, mode, includeFilter) {
 function toggleSelectorMode() {
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         if (tabs && tabs.length > 0) {
-            chrome.tabs.sendMessage(tabs[0].id, { action: "toggleSelectorMode" });
+            chrome.tabs.sendMessage(tabs[0].id, { action: "toggleSelectorMode" }, function(response) {
+                // Toggle class on body based on selector mode state
+                if (response && response.selectorModeActive !== undefined) {
+                    if (response.selectorModeActive) {
+                        document.body.classList.add('selector-mode-enabled');
+                    } else {
+                        document.body.classList.remove('selector-mode-enabled');
+                    }
+                }
+            });
         }
     });
 }
 
 // Function to handle processor radio button changes
 function handleProcessorChange() {
-    const textJsonDiffSelected = document.getElementById('processor-0').checked;
+    const selectedProcessor = document.querySelector('input[name="processor"]:checked').value;
+    const textJsonDiffSelected = selectedProcessor === 'text_json_diff';
     const includeFilterContainer = document.getElementById('include-filter-container');
+    const includeFilterInput = document.getElementById('include_filter');
     
     if (textJsonDiffSelected) {
         includeFilterContainer.style.display = 'block';
     } else {
         includeFilterContainer.style.display = 'none';
+        
+        // Reset the XPath input value when switching to a different processor
+        if (includeFilterInput) {
+            includeFilterInput.value = '';
+        }
         
         // Disable selector mode if it's active when switching to a different processor
         disableSelectorMode();
@@ -199,6 +215,19 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if selector mode is active when popup opens
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (tabs && tabs.length > 0) {
+            chrome.tabs.sendMessage(tabs[0].id, { action: "getSelectorModeStatus" }, function(response) {
+                if (response && response.selectorModeActive) {
+                    document.body.classList.add('selector-mode-enabled');
+                } else {
+                    document.body.classList.remove('selector-mode-enabled');
+                }
+            });
+        }
+    });
+
     // Setup tag input focus event
     const tagInput = document.getElementById('tag');
     if (tagInput) {
@@ -235,6 +264,20 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleSelectorMode();
         });
     }
+    
+    // Setup space key to toggle selector mode
+    document.addEventListener('keydown', function(e) {
+        // Check if space key is pressed
+        if ((e.key === ' ' || e.code === 'Space') && !e.target.matches('input[type="text"], textarea')) {
+            // Check if the text/HTML processor is selected
+            const selectedProcessor = document.querySelector('input[name="processor"]:checked').value;
+            const textJsonDiffSelected = selectedProcessor === 'text_json_diff';
+            if (textJsonDiffSelected && document.getElementById('include-filter-container').style.display !== 'none') {
+                e.preventDefault();
+                toggleSelectorMode();
+            }
+        }
+    });
 });
 
 document.getElementById('watch').onclick = function () {

@@ -22,11 +22,14 @@
             <li><input checked="" id="processor-0" name="processor" type="radio" value="text_json_diff"> <label
                     for="processor-0">Webpage Text/HTML, JSON and PDF changes</label>
             <br> <span class="label-text">Monitors a page for changes in text</span>
-            <div id="include-filter-container" style="margin-top: 8px; display: block;">
-                <input id="include_filter" name="include_filter" type="text" autocomplete="off" placeholder="XPath filter" />
-                <button id="selector-mode" class="selector-btn" title="Enable element selector mode">
-                    <span class="material-symbols-outlined">touch_app</span>
-                </button>
+            <div id="include-filter-container" style="margin-top: 8px;">
+                <div class="filter-content">
+                    <button id="selector-mode" class="selector-btn" title="Enable element selector mode">
+                        <span class="material-symbols-outlined">touch_app</span>
+                    </button>
+                    <input id="include_filter" name="include_filter" type="text" autocomplete="off" placeholder="XPath filter" />
+                </div>
+                <div class="filter-help">Move mouse over element then press space to select</div>
             </div>
             </li>
             <li><input id="processor-1" name="processor" type="radio" value="restock_diff"> <label for="processor-1">Re-stock Detection for single product pages <br> <span class="label-text">For pages that contains only ONE product</span></label></li>

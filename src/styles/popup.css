@@ -151,11 +151,54 @@ h1 > span#location {
   color: blue;
 }
 
-#tag {
+#tag, #include_filter {
   border-radius: 10px;
   border: 1px solid var(--color-grey-600);
   color: var(--color-grey-350);
   padding-left: 1rem;
+}
+
+#include-filter-container {
+  display: block;
+}
+#include-filter-container .filter-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+#include-filter-container .filter-content #include_filter {
+  flex: 1;
+}
+#include-filter-container .filter-help {
+  font-size: 0.75rem;
+  color: var(--color-grey-500);
+  margin-top: 4px;
+  padding-left: 1.3rem;
+  font-style: italic;
+}
+
+.selector-btn {
+  background-color: var(--color-cdio-blue);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.selector-btn .material-symbols-outlined {
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+.selector-btn:hover {
+  filter: brightness(1.15);
+}
+
+body.selector-mode-enabled .selector-btn .material-symbols-outlined {
+  opacity: 1;
 }
 
 #results {
