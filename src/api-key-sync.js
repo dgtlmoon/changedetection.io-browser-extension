@@ -21,23 +21,41 @@ function attemptAPIAccessSync(triggerElem) {
             chrome.runtime.sendMessage({command: "getAPIKeyValue", tabId: tabId}, function (response) {
                 // This callback will be called with the result from sendResponse in background.js
                 if (url.endsWith('#api') && response !== false) {
-                    const save_endpointUrl = url.replace('/settings#api', '').replace('/settings/#api', '');
-                    chrome.storage.local.set({
-                        apiKey: response.trim(),
-                        endpointUrl: save_endpointUrl
-                    }, function () {
-                        document.body.classList.add('state-synced')
-                        document.body.classList.remove('state-unsynced')
-                        chrome.runtime.sendMessage({
-                            type: 'showNotification',
-                            data: {
-                                type: 'basic',
-                                iconUrl: '/images/shortcut-128.png',
-                                title: 'Success',
-                                message: 'Now synchronised with your changedetection.io, happy change detecting!'
+                    // Validate API key is not empty after trimming
+                    const apiKey = response ? response.trim() : '';
+                    if (!apiKey) {
+                        alert("API key is empty or invalid. Please make sure the API key is properly displayed on the page.");
+                        return;
+                    }
+                    
+                    // Use URL constructor to get base URL safely
+                    try {
+                        const urlObj = new URL(url);
+                        const save_endpointUrl = urlObj.origin + urlObj.pathname.replace(/\/settings\/?$/, '');
+                        
+                        chrome.storage.local.set({
+                            apiKey: apiKey,
+                            endpointUrl: save_endpointUrl
+                        }, function () {
+                            if (chrome.runtime.lastError) {
+                                alert("Error saving settings: " + chrome.runtime.lastError.message);
+                                return;
                             }
+                            document.body.classList.add('state-synced')
+                            document.body.classList.remove('state-unsynced')
+                            chrome.runtime.sendMessage({
+                                type: 'showNotification',
+                                data: {
+                                    type: 'basic',
+                                    iconUrl: '/images/shortcut-128.png',
+                                    title: 'Success',
+                                    message: 'Now synchronised with your changedetection.io, happy change detecting!'
+                                }
+                            });
                         });
-                    });
+                    } catch (e) {
+                        alert("The endpoint URL is invalid. Please check the URL format.");
+                    }
                 } else {
                     alert("Cant find your API information, are you on the API Tab in the Settings Page of your changedetection.io tool?")
                 }

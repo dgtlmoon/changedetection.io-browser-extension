@@ -1,7 +1,9 @@
 
 // Fetch tags from the API
 function fetchTags(endpointUrl, apiKey) {
-    const tagsEndpoint = endpointUrl + '/api/v1/tags';
+    // Ensure endpoint URL doesn't have trailing slash before adding path
+    const baseUrl = endpointUrl.replace(/\/+$/, '');
+    const tagsEndpoint = `${baseUrl}/api/v1/tags`;
     
     fetch(tagsEndpoint, {
         method: 'GET',
@@ -19,6 +21,11 @@ function fetchTags(endpointUrl, apiKey) {
         // Sort tags alphabetically by title
         let sortedTags = [];
         for (const [uuid, tag] of Object.entries(tagsData)) {
+            // Validate tag has a title property
+            if (!tag || typeof tag.title !== 'string') {
+                console.warn('Invalid tag format received:', tag);
+                continue;
+            }
             sortedTags.push({
                 uuid: uuid,
                 title: tag.title
@@ -28,6 +35,10 @@ function fetchTags(endpointUrl, apiKey) {
         
         // Populate tags list
         const tagsList = document.getElementById('tags-list');
+        if (!tagsList) {
+            console.error('Tags list element not found');
+            return;
+        }
         tagsList.innerHTML = '';
         
         if (sortedTags.length === 0) {
@@ -59,13 +70,22 @@ function fetchTags(endpointUrl, apiKey) {
 function submitURL(endpointUrl, apiKey, watch_url, tag, mode) {
     var manifest = chrome.runtime.getManifest();
 
-    const endpoint = endpointUrl + `/api/v1/watch?from_extension_v=${manifest.version}`;
+    // Ensure endpoint URL doesn't have trailing slash before adding path
+    const baseUrl = endpointUrl.replace(/\/+$/, '');
+    const endpoint = `${baseUrl}/api/v1/watch?from_extension_v=${manifest.version}`;
 
     console.log(`Submitting "${watch_url}" watch to "${endpoint}"`)
     data = {'url': watch_url}
 
-    if (tag.trim().length > 0) {
-        data['tag'] = tag.trim()
+    // Validate tag before adding it to the request
+    const trimmedTag = tag ? tag.trim() : '';
+    if (trimmedTag.length > 0) {
+        // Prevent excessively long tags (arbitrary limit of 100 chars)
+        if (trimmedTag.length > 100) {
+            alert('Tag is too long (max 100 characters)');
+            return;
+        }
+        data['tag'] = trimmedTag;
     }
     // Default is text_json_diff, also covers the case where their API doesn't support adding with "processor"
     if (mode !== 'text_json_diff') {

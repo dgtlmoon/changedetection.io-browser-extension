@@ -34,7 +34,7 @@ Easily add-to and manage your list of monitored websites directly in your browse
 
 <p>
 This extension provides the missing link between your browser and your <a href="https://github.com/dgtlmoon/changedetection.io">changedetection.io installation/account</a>, simply
-click <strong>"Watch this website"</strong> to add the current webpage to your list of monitored pages.
+click <strong>"Watch this web-page"</strong> to add the current webpage to your list of monitored pages.
 </p>
 
 
