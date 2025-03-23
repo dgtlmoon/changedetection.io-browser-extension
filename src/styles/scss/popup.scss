@@ -15,7 +15,7 @@ body {
 }
 
 header {
-  background: #1a73e8;
+  background: var(--color-cdio-blue);
   color: #fff;
   padding: 0.8rem;
   border-radius: 5px;
@@ -96,7 +96,10 @@ main {
   text-align: right;
   a, a:visited {
     text-decoration: none;
-    color: var(--color-grey-325);
+    color: var(--color-cdio-blue);
+  }
+  a:hover {
+    text-decoration: underline;
   }
 }
 
