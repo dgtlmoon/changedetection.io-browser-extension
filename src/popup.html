@@ -22,6 +22,15 @@
             <li><input checked="" id="processor-0" name="processor" type="radio" value="text_json_diff"> <label
                     for="processor-0">Webpage Text/HTML, JSON and PDF changes</label>
             <br> <span class="label-text">Monitors a page for changes in text</span>
+            <div id="include-filter-container" style="margin-top: 8px;">
+                <div class="filter-content">
+                    <button id="selector-mode" class="selector-btn" title="Enable element selector mode">
+                        <span class="material-symbols-outlined">touch_app</span>
+                    </button>
+                    <input id="include_filter" name="include_filter" type="text" autocomplete="off" placeholder="XPath filter" />
+                </div>
+                <div class="filter-help">Move mouse over element then press space to select</div>
+            </div>
             </li>
             <li><input id="processor-1" name="processor" type="radio" value="restock_diff"> <label for="processor-1">Re-stock Detection for single product pages <br> <span class="label-text">For pages that contains only ONE product</span></label></li>
         </ul>
@@ -29,13 +38,17 @@
 
     <div class="action-btn-container">
         <button id="watch" class="action-btn watch" title="Watch this web-page (adds the URL)">
-            Watch this website
+            Watch this web-page
             <span class="material-symbols-outlined">
         add
         </span>
         </button>
-        <input id="tag" name="tag" type="text" autocomplete="" placeholder="Organisational tag/group" />
-        <!--        <button id="watch-with-cookies" class="action-btn watch-with-cookies" title="Watch this website (also includes any cookies)">
+        <input id="tag" name="tag" type="text" autocomplete="off" placeholder="Organisational tag/group" />
+        <h4 id="tags-heading" style="display: none;">Select group/tag</h4>
+        <div id="tags-list" class="tags-list" style="display: none;">
+            <!-- Tags will be populated here as clickable list items -->
+        </div>
+        <!--        <button id="watch-with-cookies" class="action-btn watch-with-cookies" title="Watch this web-page (also includes any cookies)">
             Watch including cookies
             <span class="material-symbols-outlined">
         cookie
@@ -50,16 +63,13 @@
     <!-- helper message in the case that we're not configured yet -->
     <div id="status-unset" class="display-when-unsynced" style="display: none;">
         <div>
-            <p>Not yet configured, Simply access your changedetection.io tool webpage, Visit the
-                <i><strong>"Settings"</strong></i>
-                page then goto the <i><strong>"API &amp; Plugins"</strong></i> tab.</p>
-
-            Once there, click <i><strong>Sync API Access</strong></i> below and I will automatically configure
-            myself.<br>
+            <p>Not yet configured, You must first sync/join this extension with your changedetection.io dashboard.</p>
+            <ul>
+                <li>With this extension open, Goto your changedetection.io dashboard, Click on <i><i><strong>"API"</strong></i> tab under <strong>Settings</strong>.</li>
+                <li>When you're on the "API" settings page, click <i><strong>Sync API Access</strong></i></li>
+            </ul>
             <p>
-                <button id="sync-access" class="action-btn watch" title="Click to sync!">
-
-                </button>
+                <button id="sync-access" class="action-btn watch" title="Click to sync!"> </button>
             </p>
         </div>
     </div>

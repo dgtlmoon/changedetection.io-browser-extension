@@ -21,6 +21,7 @@
   --color-black: #000;
   --color-dark-red: #a00;
   --color-light-red: #dd0000;
+  --color-cdio-blue: #1a73e8;
 
   --color-background-page: var(--color-white);
   --color-background-gradient-first: #5ad8f7;
@@ -106,6 +107,7 @@
 html[data-darkmode="true"] {
   --color-link: #59bdfb;
   --color-text: var(--color-white);
+  --color-cdio-blue: #3b8eea;
 
   --color-background-gradient-first: #3f90a5;
   --color-background-gradient-second: #1e316c;
