@@ -43,6 +43,7 @@ function fetchTags(endpointUrl, apiKey) {
         
         if (sortedTags.length === 0) {
             tagsList.style.display = 'none';
+            document.getElementById('tags-heading').style.display = 'none';
             return;
         }
         
@@ -55,12 +56,14 @@ function fetchTags(endpointUrl, apiKey) {
             tagItem.onclick = function() {
                 document.getElementById('tag').value = this.textContent;
                 tagsList.style.display = 'none';
+                document.getElementById('tags-heading').style.display = 'none';
             };
             tagsList.appendChild(tagItem);
         });
         
-        // Show the tags list
+        // Show the tags list and heading
         tagsList.style.display = 'block';
+        document.getElementById('tags-heading').style.display = 'block';
     })
     .catch(error => {
         console.error('Failed to fetch tags:', error);
@@ -158,10 +161,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Hide tags list when clicking outside
+        // Hide tags list and heading when clicking outside
         document.addEventListener('click', function(event) {
             if (event.target !== tagInput && !event.target.closest('#tags-list')) {
                 document.getElementById('tags-list').style.display = 'none';
+                document.getElementById('tags-heading').style.display = 'none';
             }
         });
     }
