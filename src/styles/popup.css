@@ -158,6 +158,23 @@ h1 > span#location {
   padding-left: 1rem;
 }
 
+.tags-list {
+  margin-top: 0.5rem;
+}
+.tags-list .tag-item {
+  display: flex;
+  align-items: center;
+  padding: 0.4rem 0.8rem;
+  margin-bottom: 0.3rem;
+  border-radius: 5px;
+  background-color: var(--color-grey-900);
+  cursor: pointer;
+}
+.tags-list .tag-item:hover {
+  background-color: var(--color-grey-800);
+}
+/* Removed tag icon as requested */
+
 #include-filter-container {
   display: block;
 }
