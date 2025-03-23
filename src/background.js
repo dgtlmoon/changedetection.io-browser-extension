@@ -18,9 +18,10 @@ chrome.runtime.onMessage.addListener(
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.command === "getAPIKeyValue") {
-      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        // Use the tabId sent in the message
+        if (request.tabId) {
             chrome.scripting.executeScript({
-                target: {tabId: tabs[0].id},
+                target: {tabId: request.tabId},
                 function: getElementsContent
             }).then(([result]) => {
                 sendResponse(result.result);
@@ -28,9 +29,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
                 console.error("Script execution failed: " + error.message);
                 sendResponse(false);
             });
-        });
-        return true; // Required to indicate that sendResponse will be called asynchronously
-
+            return true; // Keep the message channel open for the async response
+        } 
     }
 });
 

@@ -14,10 +14,14 @@ function attemptAPIAccessSync(triggerElem) {
 
             // Get the URL of the active tab
             const url = tabs[0].url.toLowerCase().trim();
+            const tabId = tabs[0].id;
             triggerElem.innerHTML=`Checking for access key <span class="material-symbols-outlined">sync_lock</span>`;
-            chrome.runtime.sendMessage({command: "getAPIKeyValue"}, function (response) {
-                if (url.endsWith('/settings#api') && response !== false) {
-                    const save_endpointUrl = url.replace('/settings#api', '');
+            
+            // Set up callback to handle response from background script
+            chrome.runtime.sendMessage({command: "getAPIKeyValue", tabId: tabId}, function (response) {
+                // This callback will be called with the result from sendResponse in background.js
+                if (url.endsWith('#api') && response !== false) {
+                    const save_endpointUrl = url.replace('/settings#api', '').replace('/settings/#api', '');
                     chrome.storage.local.set({
                         apiKey: response.trim(),
                         endpointUrl: save_endpointUrl
@@ -38,7 +42,6 @@ function attemptAPIAccessSync(triggerElem) {
                     alert("Cant find your API information, are you on the API Tab in the Settings Page of your changedetection.io tool?")
                 }
             });
-
         }
     });
 }
