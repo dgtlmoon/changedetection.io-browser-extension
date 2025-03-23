@@ -70,7 +70,7 @@ function fetchTags(endpointUrl, apiKey) {
     });
 }
 
-function submitURL(endpointUrl, apiKey, watch_url, tag, mode) {
+function submitURL(endpointUrl, apiKey, watch_url, tag, mode, includeFilter) {
     var manifest = chrome.runtime.getManifest();
 
     // Ensure endpoint URL doesn't have trailing slash before adding path
@@ -90,6 +90,12 @@ function submitURL(endpointUrl, apiKey, watch_url, tag, mode) {
         }
         data['tag'] = trimmedTag;
     }
+    
+    // Add include_filter if provided and mode is text_json_diff
+    if (mode === 'text_json_diff' && includeFilter && includeFilter.trim().length > 0) {
+        data['include_filters'] = [includeFilter.trim()];
+    }
+    
     // Default is text_json_diff, also covers the case where their API doesn't support adding with "processor"
     if (mode !== 'text_json_diff') {
         data['processor'] = mode;
@@ -149,6 +155,49 @@ function submitURL(endpointUrl, apiKey, watch_url, tag, mode) {
 // Could be re-used but just with extra cookie information stored
 // set on class, and if ID=...
 // Add event listener for the tag input to show the tags list
+// Function to toggle XPath selector mode
+function toggleSelectorMode() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (tabs && tabs.length > 0) {
+            chrome.tabs.sendMessage(tabs[0].id, { action: "toggleSelectorMode" });
+        }
+    });
+}
+
+// Function to handle processor radio button changes
+function handleProcessorChange() {
+    const textJsonDiffSelected = document.getElementById('processor-0').checked;
+    const includeFilterContainer = document.getElementById('include-filter-container');
+    
+    if (textJsonDiffSelected) {
+        includeFilterContainer.style.display = 'block';
+    } else {
+        includeFilterContainer.style.display = 'none';
+        
+        // Disable selector mode if it's active when switching to a different processor
+        disableSelectorMode();
+    }
+}
+
+// Function to disable selector mode
+function disableSelectorMode() {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (tabs && tabs.length > 0) {
+            chrome.tabs.sendMessage(tabs[0].id, { action: "disableSelectorMode" });
+        }
+    });
+}
+
+// Listen for XPath updates from background script
+chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+    if (message.action === "updateXPathInPopup" && message.xpath) {
+        const includeFilterInput = document.getElementById('include_filter');
+        if (includeFilterInput) {
+            includeFilterInput.value = message.xpath;
+        }
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     // Setup tag input focus event
     const tagInput = document.getElementById('tag');
@@ -169,6 +218,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Setup processor radio buttons change event
+    const processorRadios = document.querySelectorAll('input[name="processor"]');
+    processorRadios.forEach(radio => {
+        radio.addEventListener('change', handleProcessorChange);
+    });
+    
+    // Initial call to set the correct display
+    handleProcessorChange();
+    
+    // Setup selector mode button click event
+    const selectorModeButton = document.getElementById('selector-mode');
+    if (selectorModeButton) {
+        selectorModeButton.addEventListener('click', function() {
+            toggleSelectorMode();
+        });
+    }
 });
 
 document.getElementById('watch').onclick = function () {
@@ -181,14 +247,22 @@ document.getElementById('watch').onclick = function () {
                 url = tabs[0].url;
             }
 
-            submitURL(endpointUrl,
+            // Get the selected processor value
+            const processorValue = document.querySelector('input[name="processor"]:checked').value;
+            
+            // Only pass include_filter if the text_json_diff processor is selected
+            const includeFilter = processorValue === 'text_json_diff' ? 
+                document.getElementById('include_filter').value : null;
+
+            submitURL(
+                endpointUrl,
                 apiKey,
                 url,
                 document.getElementById('tag').value,
-                document.querySelector('input[name="processor"]:checked').value
+                processorValue,
+                includeFilter
             );
         });
     });
-
 };
 

@@ -16,6 +16,22 @@ chrome.runtime.onMessage.addListener(
     }
 )
 
+// Handle connection from content script
+chrome.runtime.onConnect.addListener(function(port) {
+    if (port.name === "xpathSelector") {
+        // Listen for XPath updates from content script
+        port.onMessage.addListener(function(message) {
+            if (message.action === "updateXPath") {
+                // Forward the XPath to the popup if it's open
+                chrome.runtime.sendMessage({
+                    action: "updateXPathInPopup",
+                    xpath: message.xpath
+                });
+            }
+        });
+    }
+});
+
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (request.command === "getAPIKeyValue") {
         // Use the tabId sent in the message

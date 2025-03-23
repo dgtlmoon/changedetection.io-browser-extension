@@ -11,6 +11,12 @@
     "tabs",
     "scripting"
   ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"]
+    }
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
