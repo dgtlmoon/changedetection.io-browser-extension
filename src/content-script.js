@@ -5,14 +5,18 @@ let port = null;
 
 // Initialize connection with the popup
 function initPort() {
-    port = chrome.runtime.connect({ name: "xpathSelector" });
-    port.onDisconnect.addListener(() => {
-        // When popup closes (port disconnects), disable selector mode
-        if (selectorModeActive) {
-            disableSelectorMode();
-        }
-        port = null;
-    });
+    try {
+        port = chrome.runtime.connect({ name: "xpathSelector" });
+        port.onDisconnect.addListener(() => {
+            // When popup closes (port disconnects), disable selector mode
+            if (selectorModeActive) {
+                disableSelectorMode();
+            }
+            port = null;
+        });
+    } catch (error) {
+        console.error("Port connection failed:", error);
+    }
 }
 
 // Function to generate XPath for an element
@@ -59,16 +63,62 @@ function getOptimizedXPath(element) {
     if (element.classList && element.classList.length > 0) {
         const classesToTry = Array.from(element.classList);
         for (const className of classesToTry) {
-            // Check if this class is unique enough on the page
-            const elementsWithClass = document.querySelectorAll(`.${className}`);
-            if (elementsWithClass.length === 1) {
-                return `//*[contains(@class, "${className}")]`;
+            try {
+                // Check if this class is unique enough on the page
+                const elementsWithClass = document.querySelectorAll(`.${className}`);
+                if (elementsWithClass.length === 1) {
+                    return `//*[contains(@class, "${className}")]`;
+                }
+            } catch (error) {
+                console.error("Error checking class uniqueness:", error);
+                // Continue with next class if this one fails
             }
+        }
+    }
+    
+    // Try data attributes as they're often unique
+    const dataAttributes = Array.from(element.attributes)
+        .filter(attr => attr.name.startsWith('data-'));
+    
+    for (const attr of dataAttributes) {
+        try {
+            const selector = `[${attr.name}="${attr.value}"]`;
+            const elementsWithAttr = document.querySelectorAll(selector);
+            if (elementsWithAttr.length === 1) {
+                return `//*${selector}`;
+            }
+        } catch (error) {
+            // Continue with next attribute if this one fails
         }
     }
     
     // If no unique identifiers found, fall back to position-based XPath
     return getXPath(element);
+}
+
+// Safely send message to port
+function safelySendMessage(message) {
+    if (port) {
+        try {
+            port.postMessage(message);
+        } catch (error) {
+            console.error("Error sending message:", error);
+            port = null;
+            // Try to re-establish connection
+            initPort();
+        }
+    } else {
+        // Try to re-establish connection if lost
+        initPort();
+        // After re-establishing, try to send message again
+        if (port) {
+            try {
+                port.postMessage(message);
+            } catch (error) {
+                console.error("Error sending message after reconnection:", error);
+            }
+        }
+    }
 }
 
 // Function to handle mouseover event
@@ -79,21 +129,27 @@ function handleMouseOver(e) {
     
     // Remove highlight from previous element
     if (highlightedElement) {
-        highlightedElement.style.outline = '';
+        try {
+            highlightedElement.style.outline = '';
+        } catch (error) {
+            console.error("Error removing highlight:", error);
+        }
     }
     
     // Highlight current element
     highlightedElement = e.target;
-    highlightedElement.style.outline = '2px solid red';
+    try {
+        highlightedElement.style.outline = '2px solid red';
+    } catch (error) {
+        console.error("Error applying highlight:", error);
+    }
     
     // Generate XPath and send it to popup
-    const xpath = getOptimizedXPath(highlightedElement);
-    
-    if (port) {
-        port.postMessage({ action: "updateXPath", xpath: xpath });
-    } else {
-        // Try to re-establish connection if lost
-        initPort();
+    try {
+        const xpath = getOptimizedXPath(highlightedElement);
+        safelySendMessage({ action: "updateXPath", xpath: xpath });
+    } catch (error) {
+        console.error("Error generating or sending XPath:", error);
     }
 }
 
@@ -107,10 +163,11 @@ function handleClick(e) {
     
     // If we have a highlighted element, lock in the selection
     if (highlightedElement) {
-        const xpath = getOptimizedXPath(highlightedElement);
-        
-        if (port) {
-            port.postMessage({ action: "updateXPath", xpath: xpath });
+        try {
+            const xpath = getOptimizedXPath(highlightedElement);
+            safelySendMessage({ action: "updateXPath", xpath: xpath });
+        } catch (error) {
+            console.error("Error handling click:", error);
         }
     }
     
@@ -143,16 +200,7 @@ function toggleSelectorMode() {
         document.body.style.cursor = 'crosshair';
     } else {
         // Remove event listeners and reset styles when selector mode is inactive
-        document.removeEventListener('mouseover', handleMouseOver, true);
-        document.removeEventListener('click', handleClick, true);
-        document.removeEventListener('keydown', handleKeyDown, true);
-        document.body.style.cursor = '';
-        
-        // Remove highlight from element
-        if (highlightedElement) {
-            highlightedElement.style.outline = '';
-            highlightedElement = null;
-        }
+        disableSelectorMode();
     }
 }
 
@@ -162,29 +210,42 @@ function disableSelectorMode() {
         selectorModeActive = false;
         
         // Remove event listeners and reset styles
-        document.removeEventListener('mouseover', handleMouseOver, true);
-        document.removeEventListener('click', handleClick, true);
-        document.removeEventListener('keydown', handleKeyDown, true);
-        document.body.style.cursor = '';
+        try {
+            document.removeEventListener('mouseover', handleMouseOver, true);
+            document.removeEventListener('click', handleClick, true);
+            document.removeEventListener('keydown', handleKeyDown, true);
+            document.body.style.cursor = '';
+        } catch (error) {
+            console.error("Error removing event listeners:", error);
+        }
         
         // Remove highlight from element
         if (highlightedElement) {
-            highlightedElement.style.outline = '';
-            highlightedElement = null;
+            try {
+                highlightedElement.style.outline = '';
+                highlightedElement = null;
+            } catch (error) {
+                console.error("Error removing highlight on disable:", error);
+            }
         }
     }
 }
 
 // Listen for messages from the popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === "toggleSelectorMode") {
-        toggleSelectorMode();
-        sendResponse({ status: "ok", selectorModeActive: selectorModeActive });
-    } else if (message.action === "disableSelectorMode") {
-        disableSelectorMode();
-        sendResponse({ status: "ok", selectorModeActive: false });
-    } else if (message.action === "getSelectorModeStatus") {
-        sendResponse({ status: "ok", selectorModeActive: selectorModeActive });
+    try {
+        if (message.action === "toggleSelectorMode") {
+            toggleSelectorMode();
+            sendResponse({ status: "ok", selectorModeActive: selectorModeActive });
+        } else if (message.action === "disableSelectorMode") {
+            disableSelectorMode();
+            sendResponse({ status: "ok", selectorModeActive: false });
+        } else if (message.action === "getSelectorModeStatus") {
+            sendResponse({ status: "ok", selectorModeActive: selectorModeActive });
+        }
+    } catch (error) {
+        console.error("Error handling message:", error);
+        sendResponse({ status: "error", error: error.message });
     }
     return true;
 });
