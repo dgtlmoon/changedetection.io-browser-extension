@@ -229,11 +229,16 @@ async function fetchUnreadCount() {
 
         const data = await response.json();
         
-        // Count items where viewed is false
+        // Count items where viewed is false AND last_changed > 0
         // The API returns an object with UUID keys, not an array
+        // If last_changed is 0, it means no changes detected yet, so not "unread"
         let unreadCount = 0;
         if (data && typeof data === 'object') {
-            unreadCount = Object.values(data).filter(item => item && item.viewed === false).length;
+            unreadCount = Object.values(data).filter(item =>
+                item &&
+                item.viewed === false &&
+                item.last_changed > 0
+            ).length;
         }
         return unreadCount;
         
