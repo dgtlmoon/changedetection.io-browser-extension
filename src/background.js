@@ -274,7 +274,7 @@ async function startPolling() {
         await chrome.alarms.create(ALARM_NAME, {
             delayInMinutes: 0.5,
             periodInMinutes: 0.5
-        });        
+        });
     } catch (error) {
         console.error("Error starting polling:", error);
     }
@@ -313,6 +313,15 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     }
 });
 
+// Add service worker lifecycle listeners
+chrome.runtime.onStartup.addListener(() => {
+    checkConfigAndStartPolling();
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+    checkConfigAndStartPolling();
+});
+
 // Listen for storage changes to start/stop polling when API is configured
 chrome.storage.onChanged.addListener(async (changes, namespace) => {
     if (namespace === 'local' && (changes.apiKey || changes.endpointUrl)) {
@@ -322,6 +331,19 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
 
 // Start polling when extension loads (if configured)
 checkConfigAndStartPolling();
+
+// Periodic alarm health check to ensure service worker stays responsive
+setInterval(async () => {
+    try {
+        const alarms = await chrome.alarms.getAll();
+        
+        if (!alarms.find(a => a.name === ALARM_NAME)) {
+            await checkConfigAndStartPolling();
+        }
+    } catch (error) {
+        console.error("Error in alarm health check:", error);
+    }
+}, 120000); // Check every 2 minutes
 
 // Background script to handle messages from content script
 chrome.runtime.onMessage.addListener(
@@ -355,6 +377,14 @@ chrome.runtime.onMessage.addListener(
 chrome.runtime.onConnect.addListener(function(port) {
     try {
         if (port.name === "xpathSelector") {
+            // Handle port disconnection gracefully
+            port.onDisconnect.addListener(() => {
+                // Clear any runtime errors to prevent service worker crashes
+                if (chrome.runtime.lastError) {
+                    // Silently handle runtime errors on disconnect
+                }
+            });
+            
             // Listen for XPath updates from content script
             port.onMessage.addListener(function(message) {
                 try {
@@ -372,11 +402,13 @@ chrome.runtime.onConnect.addListener(function(port) {
                     }
                 } catch (error) {
                     console.error("Error handling port message:", error);
+                    // Don't let port errors crash the service worker
                 }
             });
         }
     } catch (error) {
         console.error("Error in connection listener:", error);
+        // Don't let port connection errors crash the service worker
     }
 });
 
