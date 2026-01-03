@@ -32,6 +32,32 @@ h1 > span#location {
   padding-left: 1rem;
 }
 
+.tags-list {
+  margin-top: 0.5rem;
+  
+  .tag-item {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 0.8rem;
+    margin-bottom: 0.3rem;
+    border-radius: 5px;
+    background-color: var(--color-grey-900);
+    cursor: pointer;
+    
+    &:hover {
+      background-color: var(--color-grey-800);
+    }
+    
+    &::before {
+      content: "tag";
+      font-family: 'Material Symbols Outlined';
+      margin-right: 0.5rem;
+      font-size: 1.1rem;
+      color: var(--color-cdio-blue);
+    }
+  }
+}
+
 #include-filter-container {
   display: block;
   
