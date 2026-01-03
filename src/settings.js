@@ -1,3 +1,14 @@
+// Helper function to add timeout to fetch requests
+function fetchWithTimeout(url, options = {}, timeout = 30000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    return fetch(url, {
+        ...options,
+        signal: controller.signal
+    }).finally(() => clearTimeout(timeoutId));
+}
+
 // Update the status so the user can see the general config
 document.addEventListener('DOMContentLoaded', function() {
     try {
@@ -82,12 +93,12 @@ function testConnection() {
                 const systemInfoUrl = `${baseUrl}/api/v1/systeminfo`;
 
                 // Fetch data from the API
-                fetch(systemInfoUrl, {
+                fetchWithTimeout(systemInfoUrl, {
                     method: 'GET',
                     headers: {
                         'x-api-key': apiKey
                     }
-                })
+                }, 15000)
                 .then(response => {
                     if (!response.ok) {
                         showNotification('Error :(', 'Network error :(');
@@ -104,7 +115,11 @@ function testConnection() {
                 })
                 .catch(error => {
                     console.error('There was a problem with the fetch operation:', error);
-                    showNotification('Error :(', `Error: ${error.message || error}`);
+                    if (error.name === 'AbortError') {
+                        showNotification('Error :(', 'Request timed out. Please try again.');
+                    } else {
+                        showNotification('Error :(', `Error: ${error.message || error}`);
+                    }
                 });
             })
             .catch(error => {

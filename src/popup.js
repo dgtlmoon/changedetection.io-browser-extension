@@ -1,15 +1,64 @@
+// Helper function to add timeout to fetch requests
+function fetchWithTimeout(url, options = {}, timeout = 30000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    return fetch(url, {
+        ...options,
+        signal: controller.signal
+    }).finally(() => clearTimeout(timeoutId));
+}
+
+// Helper function to validate XPath filter
+function validateXPath(xpath) {
+    if (!xpath || typeof xpath !== 'string') {
+        return { valid: false, error: 'XPath is empty or invalid type' };
+    }
+
+    const trimmed = xpath.trim();
+    if (trimmed.length === 0) {
+        return { valid: false, error: 'XPath is empty' };
+    }
+
+    // Check for excessive length (arbitrary limit of 1000 chars)
+    if (trimmed.length > 1000) {
+        return { valid: false, error: 'XPath is too long (max 1000 characters)' };
+    }
+
+    // Basic XPath syntax validation - must start with / or //
+    if (!trimmed.startsWith('/') && !trimmed.startsWith('(')) {
+        return { valid: false, error: 'XPath must start with / or // or be wrapped in parentheses' };
+    }
+
+    // Check for balanced brackets
+    const openBrackets = (trimmed.match(/\[/g) || []).length;
+    const closeBrackets = (trimmed.match(/\]/g) || []).length;
+    if (openBrackets !== closeBrackets) {
+        return { valid: false, error: 'XPath has unbalanced square brackets' };
+    }
+
+    // Check for balanced parentheses
+    const openParens = (trimmed.match(/\(/g) || []).length;
+    const closeParens = (trimmed.match(/\)/g) || []).length;
+    if (openParens !== closeParens) {
+        return { valid: false, error: 'XPath has unbalanced parentheses' };
+    }
+
+    return { valid: true, xpath: trimmed };
+}
+
 // Fetch tags from the API
 function fetchTags(endpointUrl, apiKey) {
     // Ensure endpoint URL doesn't have trailing slash before adding path
     const baseUrl = endpointUrl.replace(/\/+$/, '');
     const tagsEndpoint = `${baseUrl}/api/v1/tags`;
-    
-    fetch(tagsEndpoint, {
+
+    fetchWithTimeout(tagsEndpoint, {
         method: 'GET',
         headers: {
             'x-api-key': apiKey
         }
-    })
+    }, 15000)
     .then(response => {
         if (!response.ok) {
             throw new Error('Error fetching tags');
@@ -77,7 +126,11 @@ function fetchTags(endpointUrl, apiKey) {
         }
     })
     .catch(error => {
-        console.error('Failed to fetch tags:', error);
+        if (error.name === 'AbortError') {
+            console.error('Tags fetch timed out:', error);
+        } else {
+            console.error('Failed to fetch tags:', error);
+        }
     });
 }
 
@@ -96,7 +149,7 @@ function submitURL(endpointUrl, apiKey, watch_url, tag, mode, includeFilter) {
         const endpoint = `${baseUrl}/api/v1/watch?from_extension_v=${manifest.version}`;
 
         console.log(`Submitting "${watch_url}" watch to "${endpoint}"`);
-        data = {'url': watch_url};
+        const data = {'url': watch_url};
 
         // Validate tag before adding it to the request
         const trimmedTag = tag ? tag.trim() : '';
@@ -111,7 +164,12 @@ function submitURL(endpointUrl, apiKey, watch_url, tag, mode, includeFilter) {
         
         // Add include_filter if provided and mode is text_json_diff
         if (mode === 'text_json_diff' && includeFilter && includeFilter.trim().length > 0) {
-            data['include_filters'] = [includeFilter.trim()];
+            const validation = validateXPath(includeFilter);
+            if (!validation.valid) {
+                showErrorNotification(`Invalid XPath: ${validation.error}`);
+                return;
+            }
+            data['include_filters'] = [validation.xpath];
         }
         
         // Default is text_json_diff, also covers the case where their API doesn't support adding with "processor"
@@ -120,14 +178,14 @@ function submitURL(endpointUrl, apiKey, watch_url, tag, mode, includeFilter) {
         }
 
         // Fetch data from the API
-        fetch(endpoint, {
+        fetchWithTimeout(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'x-api-key': apiKey
             },
             body: JSON.stringify(data)
-        })
+        }, 30000)
         .then(response => {
             if (!response.ok) {
                 showErrorNotification("Network error :(");
@@ -138,14 +196,20 @@ function submitURL(endpointUrl, apiKey, watch_url, tag, mode, includeFilter) {
         .then(data => {
             // Handle the API response data here
             showSuccessNotification("Saved.");
-            const link = `${endpointUrl}/edit/${data['uuid']}`;
-            var container = document.getElementById('results');
+            // Safely construct the edit URL
+            const baseUrl = endpointUrl.replace(/\/+$/, '');
+            const editUrl = new URL(`${baseUrl}/edit/${encodeURIComponent(data['uuid'])}`);
+            const container = document.getElementById('results');
             if (container) {
-                container.innerHTML = `<p style="font-weight: bold;"><a target=_new href="${link}">Edit your new watch here!</a></p>`;
+                container.innerHTML = `<p style="font-weight: bold;"><a target=_new href="${editUrl.href}">Edit your new watch here!</a></p>`;
             }
         })
         .catch(error => {
-            showErrorNotification(`Error: ${error.message || error}`);
+            if (error.name === 'AbortError') {
+                showErrorNotification('Request timed out. Please try again.');
+            } else {
+                showErrorNotification(`Error: ${error.message || error}`);
+            }
             console.error('There was a problem with the fetch operation:', error);
         });
     } catch (error) {

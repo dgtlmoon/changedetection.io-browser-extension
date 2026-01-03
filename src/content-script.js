@@ -2,30 +2,64 @@
 let selectorModeActive = false;
 let highlightedElement = null;
 let port = null;
+let isConnecting = false;
+
+// Helper function to escape XPath string values
+function escapeXPathString(str) {
+    // If the string contains no quotes, wrap in double quotes
+    if (!str.includes('"') && !str.includes("'")) {
+        return `"${str}"`;
+    }
+    // If it contains only double quotes, wrap in single quotes
+    if (!str.includes("'")) {
+        return `'${str}'`;
+    }
+    // If it contains only single quotes, wrap in double quotes
+    if (!str.includes('"')) {
+        return `"${str}"`;
+    }
+    // If it contains both types of quotes, use concat()
+    const parts = str.split('"').map((part, index) => {
+        if (index === 0) return `"${part}"`;
+        return `'"',"${part}"`;
+    });
+    return `concat(${parts.join(',')})`;
+}
 
 // Initialize connection with the popup
 function initPort() {
+    // Prevent multiple simultaneous connection attempts
+    if (isConnecting || port) {
+        return;
+    }
+
+    isConnecting = true;
     try {
         port = chrome.runtime.connect({ name: "xpathSelector" });
+        isConnecting = false;
+
         port.onDisconnect.addListener(() => {
             // When popup closes (port disconnects), disable selector mode
             if (selectorModeActive) {
                 disableSelectorMode();
             }
             port = null;
+            isConnecting = false;
         });
     } catch (error) {
         console.error("Port connection failed:", error);
+        port = null;
+        isConnecting = false;
     }
 }
 
 // Function to generate XPath for an element
 function getXPath(element) {
     if (!element) return "";
-    
+
     // Try using id first if it exists
     if (element.id) {
-        return `//*[@id="${element.id}"]`;
+        return `//*[@id=${escapeXPathString(element.id)}]`;
     }
     
     // If no id, traverse the DOM tree to create a path
@@ -53,21 +87,21 @@ function getXPath(element) {
 // Function to get a more optimized XPath
 function getOptimizedXPath(element) {
     if (!element) return "";
-    
+
     // Try id first
     if (element.id) {
-        return `//*[@id="${element.id}"]`;
+        return `//*[@id=${escapeXPathString(element.id)}]`;
     }
-    
+
     // Try checking for unique classes
     if (element.classList && element.classList.length > 0) {
         const classesToTry = Array.from(element.classList);
         for (const className of classesToTry) {
             try {
                 // Check if this class is unique enough on the page
-                const elementsWithClass = document.querySelectorAll(`.${className}`);
+                const elementsWithClass = document.querySelectorAll(`.${CSS.escape(className)}`);
                 if (elementsWithClass.length === 1) {
-                    return `//*[contains(@class, "${className}")]`;
+                    return `//*[contains(@class, ${escapeXPathString(className)})]`;
                 }
             } catch (error) {
                 console.error("Error checking class uniqueness:", error);
@@ -75,17 +109,17 @@ function getOptimizedXPath(element) {
             }
         }
     }
-    
+
     // Try data attributes as they're often unique
     const dataAttributes = Array.from(element.attributes)
         .filter(attr => attr.name.startsWith('data-'));
-    
+
     for (const attr of dataAttributes) {
         try {
-            const selector = `[${attr.name}="${attr.value}"]`;
+            const selector = `[${CSS.escape(attr.name)}=${CSS.escape(attr.value)}]`;
             const elementsWithAttr = document.querySelectorAll(selector);
             if (elementsWithAttr.length === 1) {
-                return `//*${selector}`;
+                return `//*[@${attr.name}=${escapeXPathString(attr.value)}]`;
             }
         } catch (error) {
             // Continue with next attribute if this one fails
@@ -101,24 +135,20 @@ function safelySendMessage(message) {
     if (port) {
         try {
             port.postMessage(message);
+            return true;
         } catch (error) {
             console.error("Error sending message:", error);
             port = null;
-            // Try to re-establish connection
+            // Connection lost, try to re-establish but don't retry the message
+            // (XPath updates are frequent and losing one message is acceptable)
             initPort();
+            return false;
         }
-    } else {
-        // Try to re-establish connection if lost
+    } else if (!isConnecting) {
+        // Try to re-establish connection if lost and not already connecting
         initPort();
-        // After re-establishing, try to send message again
-        if (port) {
-            try {
-                port.postMessage(message);
-            } catch (error) {
-                console.error("Error sending message after reconnection:", error);
-            }
-        }
     }
+    return false;
 }
 
 // Function to handle mouseover event
