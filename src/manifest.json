@@ -6,6 +6,7 @@
   "permissions": [
     "activeTab",
     "background",
+    "contextMenus",
     "notifications",
     "storage",
     "tabs",
