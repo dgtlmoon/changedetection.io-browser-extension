@@ -2,6 +2,204 @@
  * Update icon badge counter on active page
  */
 
+// Helper function to add timeout to fetch requests
+function fetchWithTimeout(url, options = {}, timeout = 30000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    return fetch(url, {
+        ...options,
+        signal: controller.signal
+    }).finally(() => clearTimeout(timeoutId));
+}
+
+// Helper function to submit URL to changedetection.io API
+function submitURLToAPI(endpointUrl, apiKey, watch_url, tag = '', mode = 'text_json_diff', includeFilter = null) {
+    if (!endpointUrl || !apiKey || !watch_url) {
+        console.error("Missing required parameters for submitURL");
+        return Promise.reject(new Error("Missing required parameters"));
+    }
+
+    try {
+        const manifest = chrome.runtime.getManifest();
+        const baseUrl = endpointUrl.replace(/\/+$/, '');
+        const endpoint = `${baseUrl}/api/v1/watch?from_extension_v=${manifest.version}`;
+
+        console.log(`Submitting "${watch_url}" watch to "${endpoint}"`);
+        const data = {'url': watch_url};
+
+        const trimmedTag = tag ? tag.trim() : '';
+        if (trimmedTag.length > 0) {
+            if (trimmedTag.length > 100) {
+                return Promise.reject(new Error('Tag is too long (max 100 characters)'));
+            }
+            data['tag'] = trimmedTag;
+        }
+
+        if (mode !== 'text_json_diff') {
+            data['processor'] = mode;
+        }
+
+        return fetchWithTimeout(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey
+            },
+            body: JSON.stringify(data)
+        }, 30000)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network error');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const baseUrl = endpointUrl.replace(/\/+$/, '');
+            const editUrl = new URL(`${baseUrl}/edit/${encodeURIComponent(data['uuid'])}`);
+            return editUrl.href;
+        });
+    } catch (error) {
+        return Promise.reject(error);
+    }
+}
+
+// Track if context menus are being initialized to prevent duplicates
+let isInitializingMenus = false;
+
+// Initialize context menus when extension is installed or updated
+async function initializeContextMenus() {
+    // Prevent concurrent initialization
+    if (isInitializingMenus) {
+        console.log('Context menu initialization already in progress, skipping...');
+        return;
+    }
+
+    isInitializingMenus = true;
+
+    try {
+        // Remove any existing context menus and wait for completion
+        await chrome.contextMenus.removeAll();
+
+        // Check if we have API credentials
+        const { apiKey, endpointUrl } = await chrome.storage.local.get(['apiKey', 'endpointUrl']);
+        const isConfigured = !!(apiKey && endpointUrl);
+
+        // Create context menu for links
+        chrome.contextMenus.create({
+            id: 'watch-link',
+            title: 'Watch this link with changedetection.io',
+            contexts: ['link'],
+            enabled: isConfigured
+        });
+
+        // Create context menu for current page
+        chrome.contextMenus.create({
+            id: 'watch-page',
+            title: 'Watch this page with changedetection.io',
+            contexts: ['page'],
+            enabled: isConfigured
+        });
+
+        console.log('Context menus initialized, configured:', isConfigured);
+    } catch (error) {
+        console.error('Error initializing context menus:', error);
+    } finally {
+        isInitializingMenus = false;
+    }
+}
+
+// Handle context menu clicks
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+    try {
+        const { apiKey, endpointUrl } = await chrome.storage.local.get(['apiKey', 'endpointUrl']);
+
+        if (!apiKey || !endpointUrl) {
+            chrome.notifications.create({
+                type: 'basic',
+                iconUrl: '/images/shortcut.png',
+                title: 'Not Configured',
+                message: 'Please configure the extension by visiting your changedetection.io settings page first.'
+            });
+            return;
+        }
+
+        let urlToWatch = '';
+
+        if (info.menuItemId === 'watch-link') {
+            urlToWatch = info.linkUrl;
+        } else if (info.menuItemId === 'watch-page') {
+            urlToWatch = tab.url;
+        }
+
+        if (!urlToWatch) {
+            console.error('No URL found to watch');
+            return;
+        }
+
+        // Show processing notification
+        chrome.notifications.create({
+            type: 'basic',
+            iconUrl: '/images/shortcut.png',
+            title: 'Adding watch...',
+            message: `Adding ${urlToWatch}`
+        });
+
+        // Submit the URL
+        const editUrl = await submitURLToAPI(endpointUrl, apiKey, urlToWatch);
+
+        // Show success notification
+        chrome.notifications.create({
+            type: 'basic',
+            iconUrl: '/images/shortcut.png',
+            title: 'Watch Added!',
+            message: `Successfully added ${urlToWatch}. Click to edit.`,
+            requireInteraction: true
+        }, (notificationId) => {
+            // Store the edit URL for this notification
+            chrome.storage.local.set({ [`notification_${notificationId}`]: editUrl });
+        });
+
+    } catch (error) {
+        console.error('Error adding watch from context menu:', error);
+        chrome.notifications.create({
+            type: 'basic',
+            iconUrl: '/images/shortcut.png',
+            title: 'Error',
+            message: error.message || 'Failed to add watch'
+        });
+    }
+});
+
+// Handle notification clicks to open edit page
+chrome.notifications.onClicked.addListener((notificationId) => {
+    chrome.storage.local.get([`notification_${notificationId}`], (result) => {
+        const editUrl = result[`notification_${notificationId}`];
+        if (editUrl) {
+            chrome.tabs.create({ url: editUrl });
+            // Clean up stored URL
+            chrome.storage.local.remove([`notification_${notificationId}`]);
+        }
+    });
+});
+
+// Listen for storage changes to update context menu enabled state
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && (changes.apiKey || changes.endpointUrl)) {
+        initializeContextMenus();
+    }
+});
+
+// Initialize context menus on extension install/update or startup
+chrome.runtime.onInstalled.addListener(() => {
+    initializeContextMenus();
+});
+
+// Initialize on service worker startup (handles browser restart)
+chrome.runtime.onStartup.addListener(() => {
+    initializeContextMenus();
+});
+
 // Background script to handle messages from content script
 chrome.runtime.onMessage.addListener(
     function (message, sender, sendResponse) {
