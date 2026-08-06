@@ -280,5 +280,44 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
 });
 
+// Function to check if current page is a diff page and notify background
+function checkForDiffPage() {
+    try {
+        // Get the current URL
+        const currentUrl = window.location.href.toLowerCase();
+
+        // Check if URL contains /diff/ path
+        if (currentUrl.includes('/diff/')) {
+
+            // Send message to background script to update badge immediately
+            chrome.runtime.sendMessage({
+                type: 'updateBadgeFromDiffPage'
+            }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error("Error sending diff page message:", chrome.runtime.lastError);
+                }
+            });
+        }
+    } catch (error) {
+        console.error("Error checking for diff page:", error);
+    }
+}
+
+// Check for diff page on initial load
+checkForDiffPage();
+
+// Listen for URL changes (for single-page applications)
+let lastUrl = location.href;
+new MutationObserver(() => {
+    const url = location.href;
+    if (url !== lastUrl) {
+        lastUrl = url;
+        checkForDiffPage();
+    }
+}).observe(document, { subtree: true, childList: true });
+
+// Also listen for popstate events (back/forward navigation)
+window.addEventListener('popstate', checkForDiffPage);
+
 // Initialize the port connection
 initPort();

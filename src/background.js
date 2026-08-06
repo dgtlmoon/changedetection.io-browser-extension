@@ -199,6 +199,156 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onStartup.addListener(() => {
     initializeContextMenus();
 });
+// Variables for badge polling
+let currentUnreadCount = 0;
+const ALARM_NAME = 'badgeUpdate';
+
+// Function to fetch unread count from API
+async function fetchUnreadCount() {
+    try {
+        const { apiKey, endpointUrl } = await chrome.storage.local.get(['apiKey', 'endpointUrl']);
+                
+        if (!apiKey || !endpointUrl) {
+            return 0;
+        }
+
+        const apiUrl = `${endpointUrl}/api/v1/watch`;
+        
+        const response = await fetch(apiUrl, {
+            headers: {
+                'X-Api-Key': apiKey,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("API request failed:", response.status, response.statusText, errorText);
+            return 0;
+        }
+
+        const data = await response.json();
+        
+        // Count items where viewed is false AND last_changed > 0
+        // The API returns an object with UUID keys, not an array
+        // If last_changed is 0, it means no changes detected yet, so not "unread"
+        let unreadCount = 0;
+        if (data && typeof data === 'object') {
+            unreadCount = Object.values(data).filter(item =>
+                item &&
+                item.viewed === false &&
+                item.last_changed > 0
+            ).length;
+        }
+        return unreadCount;
+        
+    } catch (error) {
+        console.error("Error fetching unread count:", error);
+        return 0;
+    }
+}
+
+// Function to update the badge
+async function updateBadge() {
+    try {
+        const unreadCount = await fetchUnreadCount();
+        currentUnreadCount = unreadCount;
+       
+        if (unreadCount > 0) {
+            await chrome.action.setBadgeText({ text: unreadCount.toString() });
+            await chrome.action.setBadgeBackgroundColor({ color: '#663399' }); // Dark purple background
+            await chrome.action.setBadgeTextColor({ color: '#FFFFFF' }); // White text
+        } else {
+            await chrome.action.setBadgeText({ text: '' }); // Clear badge
+        }
+    } catch (error) {
+        console.error("Error updating badge:", error);
+    }
+}
+
+// Function to start polling using alarms
+async function startPolling() {
+    try {
+        // Clear any existing alarm
+        await chrome.alarms.clear(ALARM_NAME);
+        
+        // Update badge immediately
+        await updateBadge();
+        
+        // Set up alarm to trigger every 30 seconds (0.5 minutes)
+        await chrome.alarms.create(ALARM_NAME, {
+            delayInMinutes: 0.5,
+            periodInMinutes: 0.5
+        });
+    } catch (error) {
+        console.error("Error starting polling:", error);
+    }
+}
+
+// Function to stop polling
+async function stopPolling() {
+    try {
+        await chrome.alarms.clear(ALARM_NAME);
+    } catch (error) {
+        console.error("Error stopping polling:", error);
+    }
+}
+
+// Check if API is configured and start/stop polling accordingly
+async function checkConfigAndStartPolling() {
+    try {
+        const { apiKey, endpointUrl } = await chrome.storage.local.get(['apiKey', 'endpointUrl']);
+        
+        if (apiKey && endpointUrl) {
+            await startPolling();
+        } else {
+            await stopPolling();
+            // Clear badge if not configured
+            await chrome.action.setBadgeText({ text: '' });
+        }
+    } catch (error) {
+        console.error("Error checking configuration:", error);
+    }
+}
+
+// Listen for alarms
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name === ALARM_NAME) {
+        await updateBadge();
+    }
+});
+
+// Add service worker lifecycle listeners
+chrome.runtime.onStartup.addListener(() => {
+    checkConfigAndStartPolling();
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+    checkConfigAndStartPolling();
+});
+
+// Listen for storage changes to start/stop polling when API is configured
+chrome.storage.onChanged.addListener(async (changes, namespace) => {
+    if (namespace === 'local' && (changes.apiKey || changes.endpointUrl)) {
+        await checkConfigAndStartPolling();
+    }
+});
+
+// Start polling when extension loads (if configured)
+checkConfigAndStartPolling();
+
+// Periodic alarm health check to ensure service worker stays responsive
+setInterval(async () => {
+    try {
+        const alarms = await chrome.alarms.getAll();
+        
+        if (!alarms.find(a => a.name === ALARM_NAME)) {
+            await checkConfigAndStartPolling();
+        }
+    } catch (error) {
+        console.error("Error in alarm health check:", error);
+    }
+}, 120000); // Check every 2 minutes
 
 // Background script to handle messages from content script
 chrome.runtime.onMessage.addListener(
@@ -211,9 +361,19 @@ chrome.runtime.onMessage.addListener(
                     title: message.data.title,
                     message: message.data.message
                 });
+            } else if (message.type === 'updateBadgeFromDiffPage') {
+                // Handle immediate badge update when user visits diff page
+                updateBadge().then(() => {
+                    sendResponse({ success: true });
+                }).catch(error => {
+                    console.error("Error updating badge from diff page:", error);
+                    sendResponse({ success: false, error: error.message });
+                });
+                return true; // Keep message channel open for async response
             }
         } catch (error) {
             console.error("Error handling message:", error);
+            sendResponse({ success: false, error: error.message });
         }
     }
 )
@@ -222,6 +382,14 @@ chrome.runtime.onMessage.addListener(
 chrome.runtime.onConnect.addListener(function(port) {
     try {
         if (port.name === "xpathSelector") {
+            // Handle port disconnection gracefully
+            port.onDisconnect.addListener(() => {
+                // Clear any runtime errors to prevent service worker crashes
+                if (chrome.runtime.lastError) {
+                    // Silently handle runtime errors on disconnect
+                }
+            });
+            
             // Listen for XPath updates from content script
             port.onMessage.addListener(function(message) {
                 try {
@@ -239,11 +407,13 @@ chrome.runtime.onConnect.addListener(function(port) {
                     }
                 } catch (error) {
                     console.error("Error handling port message:", error);
+                    // Don't let port errors crash the service worker
                 }
             });
         }
     } catch (error) {
         console.error("Error in connection listener:", error);
+        // Don't let port connection errors crash the service worker
     }
 });
 
