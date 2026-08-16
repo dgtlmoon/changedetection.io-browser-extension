@@ -5,7 +5,6 @@
   "manifest_version": 3,
   "permissions": [
     "activeTab",
-    "background",
     "contextMenus",
     "notifications",
     "storage",
@@ -21,20 +20,27 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "/images/shortcut-16.png",
-      "32": "/images/shortcut-32.png",
-      "48": "/images/shortcut-48.png",
-      "128": "/images/shortcut-128.png"
+      "16": "images/shortcut-16.png",
+      "32": "images/shortcut-32.png",
+      "48": "images/shortcut-48.png",
+      "128": "images/shortcut-128.png"
     }
   },
   "icons": {
-    "16": "/images/shortcut-16.png",
-    "32": "/images/shortcut-32.png",
-    "48": "/images/shortcut-48.png",
-    "128": "/images/shortcut-128.png"
+    "16": "images/shortcut-16.png",
+    "32": "images/shortcut-32.png",
+    "48": "images/shortcut-48.png",
+    "128": "images/shortcut-128.png"
   },
-  "incognito": "split",
+  "incognito": "spanning",
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "changedetectionio-monitor@dgtlmoon",
+      "strict_min_version": "115.0"
+    }
   }
 }
