@@ -288,6 +288,58 @@ function toggleSelectorMode() {
     });
 }
 
+// Draw the processor radio buttons, keeping the current choice when the list is redrawn
+function renderProcessors(processors) {
+    const list = document.getElementById('processor');
+    const includeFilterContainer = document.getElementById('include-filter-container');
+    if (!list) return;
+
+    const checked = document.querySelector('input[name="processor"]:checked');
+    const names = processors.map(p => p.name);
+    let selected = checked ? checked.value : null;
+    if (!names.includes(selected)) {
+        selected = names.includes('text_json_diff') ? 'text_json_diff' : names[0];
+    }
+
+    // Keep the XPath filter box (and what was typed in it) safe while the list is rebuilt
+    if (includeFilterContainer) {
+        list.parentNode.appendChild(includeFilterContainer);
+    }
+    list.innerHTML = '';
+
+    processors.forEach((processor, index) => {
+        const li = document.createElement('li');
+
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = 'processor';
+        input.id = `processor-${index}`;
+        input.value = processor.name;
+        input.checked = processor.name === selected;
+
+        const label = document.createElement('label');
+        label.htmlFor = input.id;
+        label.textContent = processor.description;
+
+        li.append(input, ' ', label);
+
+        const hint = PROCESSOR_HINTS[processor.name];
+        if (hint) {
+            const hintElem = document.createElement('span');
+            hintElem.className = 'label-text';
+            hintElem.textContent = hint;
+            li.append(document.createElement('br'), hintElem);
+        }
+
+        if (processor.name === 'text_json_diff' && includeFilterContainer) {
+            li.appendChild(includeFilterContainer);
+        }
+        list.appendChild(li);
+    });
+
+    handleProcessorChange();
+}
+
 // Function to handle processor radio button changes
 function handleProcessorChange() {
     try {
@@ -300,7 +352,9 @@ function handleProcessorChange() {
         const includeFilterInput = document.getElementById('include_filter');
         
         if (includeFilterContainer) {
-            includeFilterContainer.style.display = textJsonDiffSelected ? 'block' : 'none';
+            // Hidden when the server doesn't offer text_json_diff at all
+            const filterAvailable = !!document.querySelector('input[name="processor"][value="text_json_diff"]');
+            includeFilterContainer.style.display = (textJsonDiffSelected && filterAvailable) ? 'block' : 'none';
         }
         
         if (!textJsonDiffSelected && includeFilterInput) {
@@ -398,14 +452,20 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Setup processor radio buttons change event
-        const processorRadios = document.querySelectorAll('input[name="processor"]');
-        processorRadios.forEach(radio => {
-            radio.addEventListener('change', handleProcessorChange);
+        // Processor radio buttons are redrawn when the list changes, so listen on the list itself
+        const processorList = document.getElementById('processor');
+        if (processorList) {
+            processorList.addEventListener('change', handleProcessorChange);
+        }
+
+        // Draw the cached processors straight away, then ask the server in case they changed
+        getCachedProcessors().then(renderProcessors);
+        refreshProcessors();
+        chrome.storage.onChanged.addListener((changes, areaName) => {
+            if (areaName === 'local' && changes.processors) {
+                getCachedProcessors().then(renderProcessors);
+            }
         });
-        
-        // Initial call to set the correct display
-        handleProcessorChange();
         
         // Setup selector mode button click event
         const selectorModeButton = document.getElementById('selector-mode');

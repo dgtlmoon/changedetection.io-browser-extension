@@ -2,6 +2,8 @@
  * Update icon badge counter on active page
  */
 
+importScripts('processors.js');
+
 // Helper function to add timeout to fetch requests
 function fetchWithTimeout(url, options = {}, timeout = 30000) {
     const controller = new AbortController();
@@ -66,12 +68,16 @@ function submitURLToAPI(endpointUrl, apiKey, watch_url, tag = '', mode = 'text_j
 
 // Track if context menus are being initialized to prevent duplicates
 let isInitializingMenus = false;
+// Set when a rebuild is requested while one is already running, so the latest state is never skipped
+let menusRebuildPending = false;
+
+const FOLLOW_LINK_PREFIX = 'follow-link:';
 
 // Initialize context menus when extension is installed or updated
 async function initializeContextMenus() {
-    // Prevent concurrent initialization
+    // Prevent concurrent initialization, but remember to rebuild once the current one is done
     if (isInitializingMenus) {
-        console.log('Context menu initialization already in progress, skipping...');
+        menusRebuildPending = true;
         return;
     }
 
@@ -84,14 +90,25 @@ async function initializeContextMenus() {
         // Check if we have API credentials
         const { apiKey, endpointUrl } = await chrome.storage.local.get(['apiKey', 'endpointUrl']);
         const isConfigured = !!(apiKey && endpointUrl);
+        const processors = await getCachedProcessors();
 
-        // Create context menu for links
+        // Links get a submenu with every processor the server offers
         chrome.contextMenus.create({
-            id: 'watch-link',
-            title: 'Watch this link with changedetection.io',
+            id: 'follow-link',
+            title: 'Follow in changedetection.io',
             contexts: ['link'],
             enabled: isConfigured
         });
+
+        for (const processor of processors) {
+            chrome.contextMenus.create({
+                id: FOLLOW_LINK_PREFIX + processor.name,
+                parentId: 'follow-link',
+                title: processor.description,
+                contexts: ['link'],
+                enabled: isConfigured
+            });
+        }
 
         // Create context menu for current page
         chrome.contextMenus.create({
@@ -106,6 +123,10 @@ async function initializeContextMenus() {
         console.error('Error initializing context menus:', error);
     } finally {
         isInitializingMenus = false;
+        if (menusRebuildPending) {
+            menusRebuildPending = false;
+            initializeContextMenus();
+        }
     }
 }
 
@@ -125,10 +146,13 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         }
 
         let urlToWatch = '';
+        let processor = 'text_json_diff';
+        const menuItemId = String(info.menuItemId);
 
-        if (info.menuItemId === 'watch-link') {
+        if (menuItemId.startsWith(FOLLOW_LINK_PREFIX)) {
             urlToWatch = info.linkUrl;
-        } else if (info.menuItemId === 'watch-page') {
+            processor = menuItemId.slice(FOLLOW_LINK_PREFIX.length);
+        } else if (menuItemId === 'watch-page') {
             urlToWatch = tab.url;
         }
 
@@ -146,7 +170,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         });
 
         // Submit the URL
-        const editUrl = await submitURLToAPI(endpointUrl, apiKey, urlToWatch);
+        const editUrl = await submitURLToAPI(endpointUrl, apiKey, urlToWatch, '', processor);
 
         // Show success notification
         chrome.notifications.create({
@@ -184,20 +208,29 @@ chrome.notifications.onClicked.addListener((notificationId) => {
 });
 
 // Listen for storage changes to update context menu enabled state
+// A new API key/endpoint (sync) also means a possibly different set of processors
 chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName === 'local' && (changes.apiKey || changes.endpointUrl)) {
+    if (areaName !== 'local') {
+        return;
+    }
+    if (changes.apiKey || changes.endpointUrl) {
+        initializeContextMenus();
+        refreshProcessors();
+    } else if (changes.processors) {
         initializeContextMenus();
     }
 });
 
-// Initialize context menus on extension install/update or startup
+// Initialize context menus on extension install/update or startup, then check the server for its processors
 chrome.runtime.onInstalled.addListener(() => {
     initializeContextMenus();
+    refreshProcessors();
 });
 
 // Initialize on service worker startup (handles browser restart)
 chrome.runtime.onStartup.addListener(() => {
     initializeContextMenus();
+    refreshProcessors();
 });
 
 // Background script to handle messages from content script
