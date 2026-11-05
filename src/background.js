@@ -287,7 +287,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             if (request.tabId) {
                 chrome.scripting.executeScript({
                     target: {tabId: request.tabId},
-                    function: getElementsContent
+                    func: getElementsContent
                 }).then(([result]) => {
                     if (result && result.result !== undefined) {
                         sendResponse(result.result);
